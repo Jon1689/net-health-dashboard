@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Health Dashboard</title>
+    <style>
+        body { font-family: Arial; text-align:center; margin-top:50px; }
+        .card {
+            display:inline-block;
+            padding:20px;
+            border-radius:10px;
+            box-shadow:0 0 10px rgba(0,0,0,0.2);
+        }
+        .ok { color:green; }
+        .bad { color:red; }
+    </style>
+</head>
+<body>
+
+<h1>Network Health Dashboard</h1>
+
+<div class="card">
+    <h2>API Status</h2>
+    <p id="status">Checking...</p>
+</div>
+
+<script>
+async function checkHealth() {
+    try {
+        const res = await fetch("/health");
+        const data = await res.json();
+        document.getElementById("status").innerHTML =
+            `<span class="ok">✔ ${data.status}</span>`;
+    } catch {
+        document.getElementById("status").innerHTML =
+            `<span class="bad">✖ API Offline</span>`;
+    }
+}
+checkHealth();
+</script>
+
+</body>
+</html>
