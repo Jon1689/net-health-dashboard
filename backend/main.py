@@ -7,6 +7,7 @@ from storage import init_db, save_run, get_recent_runs
 import json
 import asyncio
 from datetime import datetime, timezone
+import os
 
 app = FastAPI(title="Network Health & Threat Dashboard")
 
@@ -59,6 +60,9 @@ def history(limit: int = 10):
 
 @app.on_event("startup")
 async def start_background_monitoring():
-    # Change this later or load from config/env
-    interval_seconds = 30
-    asyncio.create_task(scheduled_monitoring_loop(interval_seconds))
+    # Prevent double-start in the same process (common during dev reloads).
+    if getattr(app.state, "monitor_task", None) is None:
+        interval_seconds = 15  # change later if you want
+        app.state.monitor_task = asyncio.create_task(
+            scheduled_monitoring_loop(interval_seconds)
+        )
