@@ -19,23 +19,58 @@
 <h1>Network Health Dashboard</h1>
 
 <div class="card">
-    <h2>API Status</h2>
-    <p id="status">Checking...</p>
+  <h2>API Status</h2>
+  <p id="status">Checking...</p>
+</div>
+
+<br/>
+
+<div class="card" style="min-width: 420px;">
+  <h2>Network Checks</h2>
+  <div id="checks">Loading checks...</div>
 </div>
 
 <script>
 async function checkHealth() {
-    try {
-        const res = await fetch("/health");
-        const data = await res.json();
-        document.getElementById("status").innerHTML =
-            `<span class="ok">✔ ${data.status}</span>`;
-    } catch {
-        document.getElementById("status").innerHTML =
-            `<span class="bad">✖ API Offline</span>`;
-    }
+  try {
+    const res = await fetch("/health");
+    const data = await res.json();
+    document.getElementById("status").innerHTML =
+      `<span class="ok">✔ ${data.status}</span>`;
+  } catch {
+    document.getElementById("status").innerHTML =
+      `<span class="bad">✖ API Offline</span>`;
+  }
 }
+
+function renderChecks(results) {
+  const rows = results.map(r => {
+    const icon = r.ping_ok ? "✔" : "✖";
+    const cls = r.ping_ok ? "ok" : "bad";
+    const ip = r.ip ? ` (${r.ip})` : "";
+    return `<div style="text-align:left; margin:6px 0;">
+      <span class="${cls}">${icon}</span>
+      <strong>${r.target}</strong>${ip}<br/>
+      <small>${r.notes}</small>
+    </div>`;
+  }).join("");
+
+  document.getElementById("checks").innerHTML = rows || "No results.";
+}
+
+async function loadChecks() {
+  try {
+    const res = await fetch("/checks");
+    const data = await res.json();
+    renderChecks(data.results || []);
+  } catch {
+    document.getElementById("checks").innerHTML =
+      `<span class="bad">✖ Failed to load checks</span>`;
+  }
+}
+
 checkHealth();
+loadChecks();
 </script>
 
 </body>
