@@ -3,6 +3,7 @@ import socket
 import subprocess
 from dataclasses import dataclass
 from typing import Dict, List, Optional
+import json
 
 
 @dataclass
@@ -13,6 +14,12 @@ class CheckResult:
     ping_ok: bool
     notes: str
 
+
+def load_targets():
+    targets_file = BASE_DIR / "targets.json"
+    with open(targets_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data.get("targets", [])
 
 def resolve_dns(hostname: str) -> (bool, Optional[str], str):
     try:
@@ -51,17 +58,21 @@ def ping_host(target: str, timeout_ms: int = 1000) -> (bool, str):
         return False, f"Ping error: {e}"
 
 
-def run_checks(targets: List[str]) -> List[Dict]:
+def run_checks(targets: List[Dict[str, str]]) -> List[Dict]:
     results: List[Dict] = []
 
-    for t in targets:
-        dns_ok, ip, dns_note = resolve_dns(t)
-        ping_ok, ping_note = ping_host(t)
+    for item in targets:
+        name = item.get("name", item["host"])
+        host = item["host"]
+
+        dns_ok, ip, dns_note = resolve_dns(host)
+        ping_ok, ping_note = ping_host(host)
 
         notes = f"{dns_note}; {ping_note}"
         results.append(
             {
-                "target": t,
+                "target": host,
+                "name": name,
                 "dns_resolved": dns_ok,
                 "ip": ip,
                 "ping_ok": ping_ok,

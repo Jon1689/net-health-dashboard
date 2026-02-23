@@ -57,7 +57,7 @@ function renderChecks(results) {
     const ip = r.ip ? ` (${r.ip})` : "";
     return `<div style="text-align:left; margin:6px 0;">
       <span class="${cls}">${icon}</span>
-      <strong>${r.target}</strong>${ip}<br/>
+      <strong>${r.name || r.target}</strong> <small>${r.target}${ip}</small><br/>
       <small>${r.notes}</small>
     </div>`;
   }).join("");
