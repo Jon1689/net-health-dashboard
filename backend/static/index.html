@@ -30,6 +30,13 @@
   <div id="checks">Loading checks...</div>
 </div>
 
+<br/>
+
+<div class="card" style="min-width: 520px;">
+  <h2>Recent History</h2>
+  <div id="history">Loading history...</div>
+</div>
+
 <script>
 async function checkHealth() {
   try {
@@ -69,8 +76,40 @@ async function loadChecks() {
   }
 }
 
+function renderHistory(runs) {
+  if (!runs.length) {
+    document.getElementById("history").innerHTML = "No history yet.";
+    return;
+  }
+
+  const html = runs.map(run => {
+    const okCount = run.results.filter(r => r.ping_ok).length;
+    const total = run.results.length;
+    return `<div style="text-align:left; margin:10px 0; padding:8px; border-top:1px solid #ddd;">
+      <strong>Run #${run.run_id}</strong> — <small>${run.created_at}</small><br/>
+      <small>Reachable: ${okCount}/${total}</small>
+    </div>`;
+  }).join("");
+
+  document.getElementById("history").innerHTML = html;
+}
+
+async function loadHistory() {
+  try {
+    const res = await fetch("/history?limit=5");
+    const data = await res.json();
+    renderHistory(data.runs || []);
+  } catch {
+    document.getElementById("history").innerHTML =
+      `<span class="bad">✖ Failed to load history</span>`;
+  }
+}
+
+/* call these at the bottom */
 checkHealth();
 loadChecks();
+loadHistory();
+
 </script>
 
 </body>
