@@ -5,11 +5,19 @@ from pathlib import Path
 from network_checks import run_checks
 from datetime import datetime, timezone
 from storage import init_db, save_run, get_recent_runs
+import json
 
 app = FastAPI(title="Network Health & Threat Dashboard")
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
+
+def load_targets():
+    targets_file = BASE_DIR / "targets.json"
+    with open(targets_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data.get("targets", [])
+
 init_db()
 
 # Serve /static/* files
@@ -25,11 +33,7 @@ def health():
 
 @app.get("/checks")
 def checks():
-    targets = [
-        "1.1.1.1",
-        "8.8.8.8",
-        "google.com",
-    ]
+    targets = load_targets()
     results = run_checks(targets)
     created_at = datetime.now(timezone.utc).isoformat()
     run_id = save_run(created_at, results)
