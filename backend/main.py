@@ -3,9 +3,10 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 from network_checks import run_checks
-from datetime import datetime, timezone
 from storage import init_db, save_run, get_recent_runs
 import json
+import asyncio
+from datetime import datetime, timezone
 
 app = FastAPI(title="Network Health & Threat Dashboard")
 
@@ -17,6 +18,19 @@ def load_targets():
     with open(targets_file, "r", encoding="utf-8") as f:
         data = json.load(f)
     return data.get("targets", [])
+
+async def scheduled_monitoring_loop(interval_seconds: int = 30):
+    while True:
+        try:
+            targets = load_targets()
+            results = run_checks(targets)
+            created_at = datetime.now(timezone.utc).isoformat()
+            save_run(created_at, results)
+        except Exception as e:
+            # Keep it simple for now: don't crash the loop
+            print(f"[monitor] error: {e}")
+
+        await asyncio.sleep(interval_seconds)
 
 init_db()
 
@@ -42,3 +56,9 @@ def checks():
 @app.get("/history")
 def history(limit: int = 10):
     return {"runs": get_recent_runs(limit=limit)}
+
+@app.on_event("startup")
+async def start_background_monitoring():
+    # Change this later or load from config/env
+    interval_seconds = 30
+    asyncio.create_task(scheduled_monitoring_loop(interval_seconds))
