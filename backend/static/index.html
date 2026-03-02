@@ -60,6 +60,9 @@ function renderChecks(results) {
       <strong>${r.name || r.target}</strong> <small>${r.target}${ip}</small><br/>
       <small>${r.notes}</small>
     </div>`;
+    const lat = (r.latency_ms !== null && r.latency_ms !== undefined)
+      ? ` — ${r.latency_ms} ms`
+      : "";
   }).join("");
 
   document.getElementById("checks").innerHTML = rows || "No results.";

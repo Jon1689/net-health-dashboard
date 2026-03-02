@@ -36,6 +36,11 @@ def init_db() -> None:
             )
             """
         )
+    # Lightweight migration: add latency_ms column if missing
+    cols = conn.execute("PRAGMA table_info(check_results)").fetchall()
+    col_names = {c["name"] for c in cols}
+    if "latency_ms" not in col_names:
+        conn.execute("ALTER TABLE check_results ADD COLUMN latency_ms REAL")
 
 
 def save_run(created_at_iso: str, results: List[Dict[str, Any]]) -> int:
@@ -49,8 +54,8 @@ def save_run(created_at_iso: str, results: List[Dict[str, Any]]) -> int:
         conn.executemany(
             """
             INSERT INTO check_results
-            (run_id, target, dns_resolved, ip, ping_ok, notes)
-            VALUES (?, ?, ?, ?, ?, ?)
+            (run_id, target, dns_resolved, ip, ping_ok, notes, latency_ms)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 (
@@ -60,6 +65,7 @@ def save_run(created_at_iso: str, results: List[Dict[str, Any]]) -> int:
                     r.get("ip"),
                     1 if r["ping_ok"] else 0,
                     r["notes"],
+                    r.get("latency_ms"),
                 )
                 for r in results
             ],
@@ -83,7 +89,7 @@ def get_recent_runs(limit: int = 10) -> List[Dict[str, Any]]:
         for run in runs:
             results = conn.execute(
                 """
-                SELECT target, dns_resolved, ip, ping_ok, notes
+                SELECT target, dns_resolved, ip, ping_ok, notes, latency_ms
                 FROM check_results
                 WHERE run_id = ?
                 ORDER BY target ASC
@@ -102,6 +108,7 @@ def get_recent_runs(limit: int = 10) -> List[Dict[str, Any]]:
                             "ip": r["ip"],
                             "ping_ok": bool(r["ping_ok"]),
                             "notes": r["notes"],
+                            "latency_ms": r["latency_ms"],
                         }
                         for r in results
                     ],

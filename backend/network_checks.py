@@ -3,7 +3,7 @@ import socket
 import subprocess
 from dataclasses import dataclass
 from typing import Dict, List, Optional
-import json
+import re
 
 
 @dataclass
@@ -15,12 +15,6 @@ class CheckResult:
     notes: str
 
 
-def load_targets():
-    targets_file = BASE_DIR / "targets.json"
-    with open(targets_file, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return data.get("targets", [])
-
 def resolve_dns(hostname: str) -> (bool, Optional[str], str):
     try:
         ip = socket.gethostbyname(hostname)
@@ -29,18 +23,16 @@ def resolve_dns(hostname: str) -> (bool, Optional[str], str):
         return False, None, "DNS resolution failed"
 
 
-def ping_host(target: str, timeout_ms: int = 1000) -> (bool, str):
+def ping_host(target: str, timeout_ms: int = 1000) -> (bool, str, Optional[float]):
     """
-    Uses the OS ping command (works on Windows/macOS/Linux).
-    Windows: ping -n 1 -w <ms>
-    Linux/macOS: ping -c 1 -W <sec> (macOS uses -W in ms? varies) - we’ll keep it basic.
+    Uses OS ping command. Returns (ok, note, latency_ms).
+    Latency parsing is best-effort and may be None sometimes.
     """
     system = platform.system().lower()
 
     if "windows" in system:
         cmd = ["ping", "-n", "1", "-w", str(timeout_ms), target]
     else:
-        # 1 packet, wait ~1s
         cmd = ["ping", "-c", "1", target]
 
     try:
@@ -51,11 +43,28 @@ def ping_host(target: str, timeout_ms: int = 1000) -> (bool, str):
             timeout=3,
         )
         ok = completed.returncode == 0
-        return ok, "Ping ok" if ok else "Ping failed"
+        out = (completed.stdout or "") + "\n" + (completed.stderr or "")
+
+        latency_ms: Optional[float] = None
+
+        # Windows often contains: "Average = 23ms"
+        m = re.search(r"Average\s*=\s*(\d+)\s*ms", out, re.IGNORECASE)
+        if m:
+            latency_ms = float(m.group(1))
+
+        # Linux/macOS often contains: "time=23.4 ms"
+        if latency_ms is None:
+            m = re.search(r"time[=<]\s*([\d\.]+)\s*ms", out, re.IGNORECASE)
+            if m:
+                latency_ms = float(m.group(1))
+
+        note = "Ping ok" if ok else "Ping failed"
+        return ok, note, latency_ms
+
     except subprocess.TimeoutExpired:
-        return False, "Ping timed out"
+        return False, "Ping timed out", None
     except Exception as e:
-        return False, f"Ping error: {e}"
+        return False, f"Ping error: {e}", None
 
 
 def run_checks(targets: List[Dict[str, str]]) -> List[Dict]:
@@ -66,7 +75,7 @@ def run_checks(targets: List[Dict[str, str]]) -> List[Dict]:
         host = item["host"]
 
         dns_ok, ip, dns_note = resolve_dns(host)
-        ping_ok, ping_note = ping_host(host)
+        ping_ok, ping_note, latency_ms = ping_host(host)
 
         notes = f"{dns_note}; {ping_note}"
         results.append(
@@ -77,6 +86,7 @@ def run_checks(targets: List[Dict[str, str]]) -> List[Dict]:
                 "ip": ip,
                 "ping_ok": ping_ok,
                 "notes": notes,
+                "latency_ms": latency_ms
             }
         )
 
