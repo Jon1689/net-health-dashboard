@@ -3,67 +3,309 @@
 <head>
     <title>Network Health Dashboard</title>
     <style>
-        body { font-family: Arial; text-align:center; margin-top:50px; }
-        .card {
-            display:inline-block;
-            padding:20px;
-            border-radius:10px;
-            box-shadow:0 0 10px rgba(0,0,0,0.2);
+      :root{
+        --bg: #0b1220;
+        --card: rgba(255,255,255,0.06);
+        --card2: rgba(255,255,255,0.09);
+        --text: rgba(255,255,255,0.92);
+        --muted: rgba(255,255,255,0.65);
+        --border: rgba(255,255,255,0.12);
+        --ok: #2ecc71;
+        --bad: #ff5c5c;
+        --accent: #7aa7ff;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+        background: radial-gradient(1200px 600px at 10% 10%, rgba(122,167,255,0.25), transparent 60%),
+                    radial-gradient(900px 500px at 90% 20%, rgba(46,204,113,0.18), transparent 55%),
+                    var(--bg);
+        color: var(--text);
+      }
+
+      .container{
+        max-width: 1100px;
+        margin: 36px auto;
+        padding: 0 18px 40px;
+      }
+
+      header{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+
+      .title{
+        display:flex;
+        flex-direction:column;
+        gap: 4px;
+      }
+
+      h1{
+        margin:0;
+        font-size: 1.7rem;
+        letter-spacing: 0.2px;
+      }
+
+      .sub{
+        margin:0;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .actions{
+        display:flex;
+        align-items:center;
+        gap: 10px;
+      }
+
+      .pill{
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        font-size: 0.9rem;
+        color: var(--muted);
+        display:flex;
+        align-items:center;
+        gap: 8px;
+        white-space: nowrap;
+      }
+
+      .dot{
+        width: 8px; height: 8px; border-radius: 999px;
+        background: var(--muted);
+      }
+      .dot.ok{ background: var(--ok); }
+      .dot.bad{ background: var(--bad); }
+
+      a.btn{
+        text-decoration:none;
+        color: var(--text);
+        padding: 9px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.06);
+        transition: transform 120ms ease, background 120ms ease;
+      }
+      a.btn:hover{ background: rgba(255,255,255,0.10); transform: translateY(-1px); }
+
+      .grid{
+        display:grid;
+        grid-template-columns: 1fr;
+        gap: 14px;
+      }
+
+      @media (min-width: 900px){
+        .grid{
+          grid-template-columns: 1.2fr 0.8fr;
+          align-items: start;
         }
-        .ok { color:green; }
-        .bad { color:red; }
+      }
+      .tiles{
+        display:grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+        margin: 14px 0 16px;
+      }
+
+      @media (min-width: 900px){
+        .tiles{ grid-template-columns: repeat(3, 1fr); }
+      }
+
+      .tile{
+        background: var(--card2);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 14px 16px;
+        box-shadow: 0 18px 35px rgba(0,0,0,0.22);
+        backdrop-filter: blur(10px);
+        text-align: left;
+      }
+
+      .tile-label{
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+      }
+
+      .tile-value{
+        font-size: 1.55rem;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .tile-sub{
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 0.88rem;
+      }
+      .card{
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 18px 35px rgba(0,0,0,0.28);
+        backdrop-filter: blur(10px);
+      }
+
+      .card h2{
+        margin: 0 0 10px;
+        font-size: 1.05rem;
+        color: rgba(255,255,255,0.88);
+      }
+
+      .muted{ color: var(--muted); }
+
+      .checks-list{
+        display:flex;
+        flex-direction:column;
+        gap: 10px;
+      }
+
+      .check-row{
+        display:flex;
+        justify-content:space-between;
+        align-items:flex-start;
+        gap: 12px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+      }
+
+      .check-left{
+        display:flex;
+        flex-direction:column;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .check-name{
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 520px;
+      }
+
+      .check-meta{
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .badge{
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 0.85rem;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.04);
+        white-space: nowrap;
+      }
+      .badge.ok{ border-color: rgba(46,204,113,0.35); color: rgba(46,204,113,0.95); }
+      .badge.bad{ border-color: rgba(255,92,92,0.35); color: rgba(255,92,92,0.95); }
+
+      .history-item{
+        padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 10px;
+        text-align:left;
+      }
+
+      .history-item strong{ color: rgba(255,255,255,0.9); }
+      .history-item small{ color: var(--muted); }
+
+      canvas{ width: 100% !important; height: 280px !important; }
+
+      .ok { color: var(--ok); }
+      .bad { color: var(--bad); }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+  <div class="container">
+    <header>
+      <div class="title">
+        <h1>Network Health Dashboard</h1>
+        <p class="sub">Last updated: <span id="lastUpdated">—</span></p>
+      </div>
 
-<h1>Network Health Dashboard</h1>
-<p><a href="/logout">Logout</a></p>
-<p><small>Last updated: <span id="lastUpdated">—</span></small></p>
+      <div class="actions">
+        <div class="pill" id="apiPill">
+          <span class="dot" id="apiDot"></span>
+          <span id="status">Checking...</span>
+        </div>
+        <a class="btn" href="/logout">Logout</a>
+      </div>
+    </header>
 
-<div class="card">
-  <h2>API Status</h2>
-  <p id="status">Checking...</p>
-</div>
+    <div class="tiles">
+      <div class="tile">
+        <div class="tile-label">Targets Up</div>
+        <div class="tile-value" id="tileUp">—</div>
+        <div class="tile-sub" id="tileUpSub">—</div>
+      </div>
 
-<br/>
+      <div class="tile">
+        <div class="tile-label">Current Uptime</div>
+        <div class="tile-value" id="tileUptime">—</div>
+        <div class="tile-sub">From latest check run</div>
+      </div>
 
-<div class="card" style="min-width: 420px;">
-  <h2>Network Checks</h2>
-  <div id="checks">Loading checks...</div>
-</div>
+      <div class="tile">
+        <div class="tile-label">Avg Latency</div>
+        <div class="tile-value" id="tileLatency">—</div>
+        <div class="tile-sub">Across reachable targets</div>
+      </div>
+    </div>
 
-<br/>
+    <div class="grid">
+      <div class="card">
+        <h2>Network Checks</h2>
+        <div id="checks" class="checks-list">Loading checks...</div>
+      </div>
 
-<div class="card" style="min-width: 520px;">
-  <h2>Recent History</h2>
-  <div id="history">Loading history...</div>
-</div>
+      <div class="card">
+        <h2>Recent History</h2>
+        <div id="history">Loading history...</div>
+      </div>
+    </div>
 
-<br/>
+    <div style="height:14px"></div>
 
-<div class="card" style="min-width: 700px;">
-  <h2>Uptime (%)</h2>
-  <canvas id="uptimeChart"></canvas>
-</div>
+    <div class="grid" style="grid-template-columns: 1fr;">
+      <div class="card">
+        <h2>Uptime (%)</h2>
+        <canvas id="uptimeChart"></canvas>
+      </div>
 
-<br/>
-
-<div class="card" style="min-width: 700px;">
-  <h2>Average Latency (ms)</h2>
-  <canvas id="latencyChart"></canvas>
-</div>
+      <div class="card">
+        <h2>Average Latency (ms)</h2>
+        <canvas id="latencyChart"></canvas>
+      </div>
+    </div>
+  </div>
 
 <script>
+
 async function checkHealth() {
+  const dot = document.getElementById("apiDot");
+  const statusEl = document.getElementById("status");
+
   try {
     const res = await fetch("/health");
     const data = await res.json();
-    document.getElementById("status").innerHTML =
-      `<span class="ok">✔ ${data.status}</span>`;
+    statusEl.textContent = `API: ${data.status}`;
+    dot.className = "dot ok";
   } catch {
-    document.getElementById("status").innerHTML =
-      `<span class="bad">✖ API Offline</span>`;
+    statusEl.textContent = "API: offline";
+    dot.className = "dot bad";
   }
 }
 
@@ -71,22 +313,31 @@ let uptimeChart = null;
 let latencyChart = null;
 
 function renderChecks(results) {
-  const rows = results.map(r => {
-    const icon = r.ping_ok ? "✔" : "✖";
-    const cls = r.ping_ok ? "ok" : "bad";
-    const ip = r.ip ? ` (${r.ip})` : "";
-    const lat = (r.latency_ms !== null && r.latency_ms !== undefined)
-      ? ` — ${r.latency_ms} ms`
-      : "";
+  const container = document.getElementById("checks");
 
-    return `<div style="text-align:left; margin:6px 0;">
-      <span class="${cls}">${icon}</span>
-      <strong>${r.name || r.target}</strong> <small>${r.target}${ip}</small>${lat}<br/>
-      <small>${r.notes}</small>
-    </div>`;
+  if (!results.length) {
+    container.innerHTML = `<div class="muted">No results.</div>`;
+    return;
+  }
+
+  container.innerHTML = results.map(r => {
+    const ok = !!r.ping_ok;
+    const badgeCls = ok ? "badge ok" : "badge bad";
+    const badgeText = ok ? "Reachable" : "Down";
+    const ip = r.ip ? ` • ${r.ip}` : "";
+    const lat = (r.latency_ms !== null && r.latency_ms !== undefined) ? ` • ${r.latency_ms} ms` : "";
+
+    return `
+      <div class="check-row">
+        <div class="check-left">
+          <div class="check-name">${r.name || r.target}</div>
+          <div class="check-meta">${r.target}${ip}${lat}</div>
+          <div class="check-meta">${r.notes || ""}</div>
+        </div>
+        <div class="${badgeCls}">${badgeText}</div>
+      </div>
+    `;
   }).join("");
-
-  document.getElementById("checks").innerHTML = rows || "No results.";
 }
 
 async function loadChecks() {
@@ -94,6 +345,7 @@ async function loadChecks() {
     const res = await fetch("/checks");
     const data = await res.json();
     renderChecks(data.results || []);
+    updateTilesFromChecks(data.results || []);
   } catch {
     document.getElementById("checks").innerHTML =
       `<span class="bad">✖ Failed to load checks</span>`;
@@ -193,6 +445,27 @@ async function loadStats() {
   } catch (e) {
     console.log("Failed to load stats", e);
   }
+}
+
+function updateTilesFromChecks(results){
+  const total = results.length;
+  const up = results.filter(r => r.ping_ok).length;
+  const pct = total ? Math.round((up/total)*100) : 0;
+
+  // avg latency of reachable targets (ignore nulls)
+  const latVals = results
+    .filter(r => r.ping_ok && r.latency_ms !== null && r.latency_ms !== undefined)
+    .map(r => Number(r.latency_ms))
+    .filter(n => !Number.isNaN(n));
+
+  const avgLat = latVals.length
+    ? Math.round((latVals.reduce((a,b)=>a+b,0) / latVals.length) * 10) / 10
+    : null;
+
+  document.getElementById("tileUp").textContent = `${up}/${total}`;
+  document.getElementById("tileUpSub").textContent = total ? `${total - up} down` : "—";
+  document.getElementById("tileUptime").textContent = `${pct}%`;
+  document.getElementById("tileLatency").textContent = (avgLat === null) ? "—" : `${avgLat} ms`;
 }
 
 /* call these at the bottom */
