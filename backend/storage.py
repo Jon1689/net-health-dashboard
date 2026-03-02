@@ -117,3 +117,58 @@ def get_recent_runs(limit: int = 10) -> List[Dict[str, Any]]:
                 }
             )
         return output
+
+def get_stats(limit: int = 50) -> Dict[str, Any]:
+    """
+    Returns time-series stats for charting:
+    - labels: run timestamps
+    - avg_latency_ms: average latency per run (None if no latency values)
+    - uptime_pct: reachable percentage per run
+    """
+    with get_conn() as conn:
+        runs = conn.execute(
+            """
+            SELECT id, created_at
+            FROM check_runs
+            ORDER BY id DESC
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+
+        # We build oldest -> newest for charts
+        runs = list(reversed(runs))
+
+        labels: List[str] = []
+        avg_latency_ms: List[Optional[float]] = []
+        uptime_pct: List[float] = []
+
+        for run in runs:
+            results = conn.execute(
+                """
+                SELECT ping_ok, latency_ms
+                FROM check_results
+                WHERE run_id = ?
+                """,
+                (run["id"],),
+            ).fetchall()
+
+            total = len(results)
+            ok = sum(1 for r in results if bool(r["ping_ok"]))
+
+            # uptime %
+            pct = (ok / total * 100.0) if total else 0.0
+
+            # avg latency (ignore NULL latency rows)
+            lat_vals = [r["latency_ms"] for r in results if r["latency_ms"] is not None]
+            avg_lat = (sum(lat_vals) / len(lat_vals)) if lat_vals else None
+
+            labels.append(run["created_at"])
+            uptime_pct.append(round(pct, 2))
+            avg_latency_ms.append(round(avg_lat, 2) if avg_lat is not None else None)
+
+        return {
+            "labels": labels,
+            "avg_latency_ms": avg_latency_ms,
+            "uptime_pct": uptime_pct,
+        }

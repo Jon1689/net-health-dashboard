@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 from pathlib import Path
 from network_checks import run_checks
-from storage import init_db, save_run, get_recent_runs
+from storage import init_db, save_run, get_recent_runs, get_stats
 import json
 import asyncio
 from datetime import datetime, timezone
@@ -138,3 +138,7 @@ def login_submit(request: Request, username: str = Form(...), password: str = Fo
 def logout(request: Request):
     request.session.clear()
     return RedirectResponse(url="/login", status_code=303)
+
+@app.get("/stats")
+def stats(limit: int = 50, _: bool = Depends(require_session)):
+    return get_stats(limit=limit)

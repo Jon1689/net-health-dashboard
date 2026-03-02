@@ -13,6 +13,7 @@
         .ok { color:green; }
         .bad { color:red; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
@@ -39,6 +40,20 @@
   <div id="history">Loading history...</div>
 </div>
 
+<br/>
+
+<div class="card" style="min-width: 700px;">
+  <h2>Uptime (%)</h2>
+  <canvas id="uptimeChart"></canvas>
+</div>
+
+<br/>
+
+<div class="card" style="min-width: 700px;">
+  <h2>Average Latency (ms)</h2>
+  <canvas id="latencyChart"></canvas>
+</div>
+
 <script>
 async function checkHealth() {
   try {
@@ -51,6 +66,9 @@ async function checkHealth() {
       `<span class="bad">✖ API Offline</span>`;
   }
 }
+
+let uptimeChart = null;
+let latencyChart = null;
 
 function renderChecks(results) {
   const rows = results.map(r => {
@@ -116,12 +134,74 @@ function setLastUpdated() {
   document.getElementById("lastUpdated").textContent = now.toLocaleString();
 }
 
+function fmtLabel(iso) {
+  // Make timestamps readable; fall back if parse fails
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? iso : d.toLocaleTimeString();
+}
+
+function renderCharts(stats) {
+  const labels = (stats.labels || []).map(fmtLabel);
+  const uptime = stats.uptime_pct || [];
+  const latency = stats.avg_latency_ms || [];
+
+  const uptimeCtx = document.getElementById("uptimeChart");
+  const latencyCtx = document.getElementById("latencyChart");
+
+  if (uptimeChart) uptimeChart.destroy();
+  if (latencyChart) latencyChart.destroy();
+
+  uptimeChart = new Chart(uptimeCtx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Uptime (%)",
+        data: uptime,
+        tension: 0.2
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { min: 0, max: 100 }
+      }
+    }
+  });
+
+  latencyChart = new Chart(latencyCtx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: "Avg Latency (ms)",
+        data: latency,
+        tension: 0.2
+      }]
+    },
+    options: {
+      responsive: true
+    }
+  });
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch("/stats?limit=30");
+    const data = await res.json();
+    renderCharts(data);
+  } catch (e) {
+    console.log("Failed to load stats", e);
+  }
+}
+
 /* call these at the bottom */
 function refreshAll() {
   setLastUpdated();
   checkHealth();
   loadChecks();
   loadHistory();
+  loadStats();
 }
 
 refreshAll();
