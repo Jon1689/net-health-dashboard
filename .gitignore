@@ -213,3 +213,6 @@ backend/.venv/
 # Python cache
 __pycache__/
 *.pyc
+
+# Local DB storage
+backend/data/

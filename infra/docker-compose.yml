@@ -1,0 +1,12 @@
+services:
+  dashboard:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      # Persist the SQLite DB
+      - ../backend/data:/app/data
+      # Optional: keep targets editable without rebuild
+      - ../backend/targets.json:/app/targets.json
