@@ -62,7 +62,7 @@ def history(limit: int = 10):
 async def start_background_monitoring():
     # Prevent double-start in the same process (common during dev reloads).
     if getattr(app.state, "monitor_task", None) is None:
-        interval_seconds = 15  # change later if you want
+        interval_seconds = 30  # change later if you want
         app.state.monitor_task = asyncio.create_task(
             scheduled_monitoring_loop(interval_seconds)
         )
