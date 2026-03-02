@@ -10,3 +10,6 @@ services:
       - ../backend/data:/app/data
       # Optional: keep targets editable without rebuild
       - ../backend/targets.json:/app/targets.json
+    environment:
+      - DASH_USER=admin
+      - DASH_PASS=change-me
