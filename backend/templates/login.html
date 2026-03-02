@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login - Network Health Dashboard</title>
+  <style>
+    body { font-family: Arial; margin-top: 60px; text-align: center; }
+    .card {
+      display: inline-block;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.15);
+      min-width: 320px;
+      text-align: left;
+    }
+    label { display:block; margin-top: 10px; }
+    input { width: 100%; padding: 10px; margin-top: 6px; box-sizing: border-box; }
+    button { margin-top: 16px; width: 100%; padding: 10px; }
+    .error { color: #b00020; margin-top: 10px; }
+    .hint { color: #555; font-size: 0.9em; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Sign in</h2>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/login">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+      <button type="submit">Login</button>
+    </form>
+
+    <div class="hint">
+      Tip: credentials come from <code>DASH_USER</code> / <code>DASH_PASS</code>.
+    </div>
+  </div>
+</body>
+</html>
