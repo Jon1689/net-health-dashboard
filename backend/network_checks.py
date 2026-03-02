@@ -86,7 +86,7 @@ def run_checks(targets: List[Dict[str, str]]) -> List[Dict]:
                 "ip": ip,
                 "ping_ok": ping_ok,
                 "notes": notes,
-                "latency_ms": latency_ms
+                "latency_ms": latency_ms,
             }
         )
 
